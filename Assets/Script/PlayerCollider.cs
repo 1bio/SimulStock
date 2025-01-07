@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 public class PlayerCollider : MonoBehaviour
 {
-    public GameObject npc_Panel; // NPC 패널
-    public Text[] texts; // NPC 텍스트들
+    public GameObject npc_Panel; 
+    public Text[] texts; 
     public GameObject Video_Panel;
 
 
@@ -39,8 +39,6 @@ public class PlayerCollider : MonoBehaviour
         {
             Video_Panel.SetActive(true);
         }
-      
-
     }
 
     private void OnTriggerExit2D(Collider2D other)
@@ -69,6 +67,5 @@ public class PlayerCollider : MonoBehaviour
         {
             Video_Panel.SetActive(false);
         }
-
     }
 }

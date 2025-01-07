@@ -1,105 +1,90 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
 
 public class UIManager : MonoBehaviour
 {
-    public GameObject player; 
+    public static UIManager instance;
 
-    public Button button_yes;
-    public Button button_no;
-    
-    public GameObject exit_Panel; 
+    [Header("Login")]
+    public GameObject startMenu;
+    public InputField usernameField;
+    public GameObject chatting;
 
-    public GameObject chatting_Panel;
-    public Toggle chatToggle;
+    [Header("Video Player")]
+    public Canvas videoUI;
+    public VideoPlayer videoPlayer;
+    private bool isPlaying = false;
 
+    [Header("NPC Dialogue")]
+    public GameObject npcDialogue;
+    public GameObject[] npcTexts = new GameObject[4];
+
+    [Header("Stock")]
+    public Button stockButton;
     public GameObject stock;
-    public Button stockPanel_On;
-    public Button stockPanel_Off;
 
-    
-    public GameObject prefabButton;
-
-    public GameObject purchase_Panel;
-    public Button purchase_Panel_Off;
-
-    public Button Send_Button;
-    public Text chat;
-    public InputField inputField;
-
-    private string input;
-
-    public void ExitButton() 
+    private void Awake()
     {
-        if (true)
+        if (instance == null)
         {
-            exit_Panel.SetActive(true);
+            instance = this;
         }
-     }
+        else if (instance != null)
+        {
+            Destroy(this);
+        }
+    }
+    
+    // Login 버튼 이벤트 
+    public void ConnectToServer(){
+        startMenu.SetActive(false);
+        chatting.SetActive(true);
+        usernameField.interactable = false;
+        
+        Client.instance.ConnectToServer();
+    }
 
- 
-    public void OnClickYesButton() 
+    // 종목 목록 조회 이벤트
+    public void CheckStockList(){
+        stock.gameObject.SetActive(true);
+    }
+
+    // Video 재생 
+    public void PlayVideo(){
+        isPlaying = true;
+        videoPlayer.Play();
+    }
+
+    // Video 중지
+    public void PauseVideo(){
+        isPlaying = false;
+        videoPlayer.Stop();
+    }
+    
+    // Video 리셋
+    public void ResetVideo(){
+        if(isPlaying){
+            PauseVideo();
+            videoPlayer.time = 0;
+        }
+
+        PlayVideo();
+    }
+
+    // UI 열기
+    public void OpenWindow(GameObject window)
     {
+        window.gameObject.SetActive(true);
+    }
+
+    // UI 닫기    
+    public void CloseWindow(GameObject window){
+        window.gameObject.SetActive(false);
+    }
+
+    // 종료
+    public void Quit(){
         Application.Quit();
     }
-
-    public void OnClickNoButton()
-    {
-        if (true)
-        {
-            exit_Panel.SetActive(false);
-        }
-    }
-
-    
-    public void ChattingToggle()
-    {
-        if (chatToggle.isOn)
-        {
-            chatting_Panel.SetActive(true);
-        }
-        else
-        {
-            chatting_Panel.SetActive(false);
-        }
-    }
-
-    public void stock_panelButtonOn()
-    {
-        if (true)
-        {
-            stock.SetActive(true);
-        }
-    }
-    
-    public void stock_panelButtonOff()
-    {
-        if (true)
-        {
-            stock.SetActive(false);
-        }
-    }
-
-  /*  public void send_Button()
-    {
-        chat.text += inputField.text + '\n';
-    }
-   */
-
-    void ReadStringInput(string s)
-    {
-        input = s;
-        Debug.Log(input);
-    }
-
-    public void Purchase_Button()
-    {
-        purchase_Panel.SetActive(false);
-    }
 }
-
-    
-
-

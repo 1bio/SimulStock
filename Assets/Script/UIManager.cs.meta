@@ -1,15 +1,9 @@
 fileFormatVersion: 2
-guid: a49e5b10ffdcbaa47ae7d86f5a9bbbda
+guid: af1230cb00151404ea393655a9bf651b
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences:
-  - player: {instanceID: 0}
-  - button_yes: {instanceID: 0}
-  - button_no: {instanceID: 0}
-  - exit_Panel: {instanceID: 0}
-  - chatting_Panel: {instanceID: 0}
-  - chatToggle: {instanceID: 0}
+  defaultReferences: []
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

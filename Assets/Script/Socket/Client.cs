@@ -1,8 +1,9 @@
-using System;
 using System.Collections.Generic;
+using UnityEngine;
 using System.Net;
 using System.Net.Sockets;
-using UnityEngine;
+using System;
+
 
 public class Client : MonoBehaviour
 {
@@ -10,9 +11,8 @@ public class Client : MonoBehaviour
     public static int dataBufferSize = 4096;
 
     public string ip = "127.0.0.1";
-    public int port = 41795;
+    public int port = 26950;
     public int myId = 0;
-
     public TCP tcp;
     public UDP udp;
 
@@ -25,9 +25,8 @@ public class Client : MonoBehaviour
         {
             instance = this;
         }
-        else if (instance != null)
+        else if (instance != this)
         {
-            Debug.Log("Instacne already exists, destroying object!");
             Destroy(this);
         }
     }
@@ -38,7 +37,7 @@ public class Client : MonoBehaviour
         udp = new UDP();
     }
 
-    // 서버 연결
+
     public void ConnectToServer()
     {
         InitializeClientData();
@@ -46,20 +45,17 @@ public class Client : MonoBehaviour
         tcp.Connect();
     }
 
-
     #region TCP Class
     public class TCP
     {
         public TcpClient socket;
 
         private NetworkStream stream;
-        private Packet receiveData;
+        private Packet receivedData;
         private byte[] receiveBuffer;
-
 
         public void Connect()
         {
-            // 수신/송신 버퍼 크기 설정
             socket = new TcpClient
             {
                 ReceiveBufferSize = dataBufferSize,
@@ -67,24 +63,23 @@ public class Client : MonoBehaviour
             };
 
             receiveBuffer = new byte[dataBufferSize];
-            socket.BeginConnect(instance.ip, instance.port, ConnectCallback, socket); // 서버에 비동기 연결, 연결 완료 후 ConnectCallback 호출
+            socket.BeginConnect(instance.ip, instance.port, ConnectCallback, socket);
         }
 
         private void ConnectCallback(IAsyncResult _result)
         {
-            socket.EndConnect(_result); // 연결 성공 여부 확인
+            socket.EndConnect(_result);
 
             if (!socket.Connected)
             {
-                return; // 연결 종료
+                return;
             }
 
-            // 연결 성공 시
-            stream = socket.GetStream(); // 네트워크 스트림 얻기
+            stream = socket.GetStream();
 
-            receiveData = new Packet();
+            receivedData = new Packet();
 
-            stream.BeginRead(receiveBuffer, 0, dataBufferSize, ReceiveCallback, null); // 비동기 데이터 읽기 시작, 데이터 도착 후 ReceiveCallback 호출
+            stream.BeginRead(receiveBuffer, 0, dataBufferSize, ReceiveCallback, null);
         }
 
         public void SendData(Packet _packet)
@@ -106,22 +101,22 @@ public class Client : MonoBehaviour
         {
             try
             {
-                int _byteLength = stream.EndRead(_result); // 실제로 읽은 바이트의 길이 확인
-
+                int _byteLength = stream.EndRead(_result);
                 if (_byteLength <= 0)
                 {
-                    return; // 연결 종료
+                    // TODO: disconnect
+                    return;
                 }
 
                 byte[] _data = new byte[_byteLength];
-                Array.Copy(receiveBuffer, _data, _byteLength); // 수신한 유효한 데이터만을 _data 배열로 복사, 불필요한 데이터를 삭제
+                Array.Copy(receiveBuffer, _data, _byteLength);
 
-                receiveData.Reset(HandleData(_data));
-                stream.BeginRead(receiveBuffer, 0, dataBufferSize, ReceiveCallback, null); // 반복 호출, 다음 데이터 읽기
+                receivedData.Reset(HandleData(_data));
+                stream.BeginRead(receiveBuffer, 0, dataBufferSize, ReceiveCallback, null);
             }
-            catch (System.Exception _ex)
+            catch
             {
-                System.Console.WriteLine($"Error: receving TCP data {_ex}");
+                // TODO: disconnect
             }
         }
 
@@ -129,20 +124,20 @@ public class Client : MonoBehaviour
         {
             int _packetLength = 0;
 
-            receiveData.SetBytes(_data);
+            receivedData.SetBytes(_data);
 
-            if (receiveData.UnreadLength() >= 4)
+            if (receivedData.UnreadLength() >= 4)
             {
-                _packetLength = receiveData.ReadInt();
+                _packetLength = receivedData.ReadInt();
                 if (_packetLength <= 0)
                 {
                     return true;
                 }
             }
 
-            while (_packetLength > 0 && _packetLength <= receiveData.UnreadLength())
+            while (_packetLength > 0 && _packetLength <= receivedData.UnreadLength())
             {
-                byte[] _packetBytes = receiveData.ReadBytes(_packetLength);
+                byte[] _packetBytes = receivedData.ReadBytes(_packetLength);
                 ThreadManager.ExecuteOnMainThread(() =>
                 {
                     using (Packet _packet = new Packet(_packetBytes))
@@ -153,9 +148,9 @@ public class Client : MonoBehaviour
                 });
 
                 _packetLength = 0;
-                if (receiveData.UnreadLength() >= 4)
+                if (receivedData.UnreadLength() >= 4)
                 {
-                    _packetLength = receiveData.ReadInt();
+                    _packetLength = receivedData.ReadInt();
                     if (_packetLength <= 0)
                     {
                         return true;
@@ -170,7 +165,6 @@ public class Client : MonoBehaviour
 
             return false;
         }
-        
     }
     #endregion
 
@@ -190,8 +184,8 @@ public class Client : MonoBehaviour
         {
             socket = new UdpClient(_localPort);
 
-            socket.Connect(endPoint); // 서버 연결 
-            socket.BeginReceive(ReceiveCallback, null); // 비동기 수신
+            socket.Connect(endPoint);
+            socket.BeginReceive(ReceiveCallback, null);
 
             using (Packet _packet = new Packet())
             {
@@ -199,19 +193,17 @@ public class Client : MonoBehaviour
             }
         }
 
-        // 서버로 데이터 전송
         public void SendData(Packet _packet)
         {
             try
             {
-                _packet.InsertInt(instance.myId); // ID를 패킷에 삽입
-                
+                _packet.InsertInt(instance.myId);
                 if (socket != null)
                 {
-                    socket.BeginSend(_packet.ToArray(), _packet.Length(), null, null); // 서버에 데이터 전송
+                    socket.BeginSend(_packet.ToArray(), _packet.Length(), null, null);
                 }
             }
-            catch (System.Exception _ex)
+            catch (Exception _ex)
             {
                 Debug.Log($"Error sending data to server via UDP: {_ex}");
             }
@@ -226,14 +218,15 @@ public class Client : MonoBehaviour
 
                 if (_data.Length < 4)
                 {
+                    // 연결 해제
                     return;
                 }
 
                 HandleData(_data);
             }
-            catch (System.Exception _ex)
+            catch
             {
-
+                // 연결 해제
             }
         }
 
@@ -255,8 +248,6 @@ public class Client : MonoBehaviour
             });
         }
     }
-    #endregion
-
 
     private void InitializeClientData()
     {
@@ -265,8 +256,11 @@ public class Client : MonoBehaviour
             { (int)ServerPackets.welcome, ClientHandle.Welcome },
             { (int)ServerPackets.spawnPlayer, ClientHandle.SpawnPlayer },
             { (int)ServerPackets.playerPosition, ClientHandle.PlayerPosition },
-            { (int)ServerPackets.playerRotation, ClientHandle.PlayerRotation }
+            { (int)ServerPackets.playerRotation, ClientHandle.PlayerRotation },
+            { (int)ServerPackets.playerAnimation, ClientHandle.PlayerAnimation }
         };
+        
         Debug.Log("Initialized packets.");
     }
+    #endregion
 }

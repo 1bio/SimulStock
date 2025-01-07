@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Net;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -11,6 +10,7 @@ public class GameManager : MonoBehaviour
     public GameObject localPlayerPrefab;
     public GameObject playerPrefab;
 
+    public Camera camera;
 
     private void Awake()
     {
@@ -18,13 +18,12 @@ public class GameManager : MonoBehaviour
         {
             instance = this;
         }
-        else if (instance != null)
+        else if (instance != this)
         {
-            Debug.Log("Instacne already exists, destroying object!");
+            Debug.Log("Instance already exists, destroying object!");
             Destroy(this);
         }
     }
-
 
     public void SpawnPlayer(int _id, string _username, Vector3 _position, Quaternion _rotation)
     {
@@ -41,5 +40,7 @@ public class GameManager : MonoBehaviour
         _player.GetComponent<PlayerManager>().id = _id;
         _player.GetComponent<PlayerManager>().username = _username;
         players.Add(_id, _player.GetComponent<PlayerManager>());
-    } 
+
+        camera.gameObject.SetActive(false);
+    }
 }
